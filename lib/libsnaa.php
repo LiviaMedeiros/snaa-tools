@@ -10,6 +10,7 @@ define('ORIGDIR',  '/SNAA/magica/resource/download/asset/master/vanilla/');
 define('LISTDIR',  '/tmp/snaa-tools/filelist/');
 define('ASSETDIR', '/tmp/snaa-tools/asset/');
 define('MADODIR',  '/tmp/snaa-tools/madomagi/');
+define('CHARLIST', 'image_native/scene/download/char_list.json');
 define('SNAASIZE', 4194304);
 define('SNAAMULT', 2);
 */
