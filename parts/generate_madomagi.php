@@ -11,10 +11,17 @@ define('ASSETDIR', '/tmp/snaa-tools/asset/');
 */
 
 
-function calc_etag($filepath) {
-	$fullpath = ASSETDIR.$filepath;
-	// insert your math here
-	return 'snaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+function calc_etag($filepath, $method = 's3') {
+	switch ($method) {
+		case 's3':
+			$fullpath = ASSETDIR.$filepath.'.gz';
+			return md5_file($fullpath);
+		case 'nginx':
+			$fullpath = ASSETDIR.$filepath; // change to final path to ensure mtime
+			return sprintf('%x-%x', filemtime($fullpath), filesize($fullpath));
+		default:
+			return 'snaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+	}
 }
 
 function make_C5XyOsaM() {

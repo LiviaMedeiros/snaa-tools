@@ -7,7 +7,7 @@
 for asset in $(ls ${ASSETDIR}*.json)
 do
 	echo gzip ${asset}
-	gzip -fk9 ${asset}
+	gzip -fkn9 ${asset}
 done
 
 exit 0
