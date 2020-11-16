@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# must be set!
-#BASEDIR="/SNAA/magica/resource/download/asset/master/resource/"
-#LISTDIR="/tmp/snaa-tools/filelist/"
+# required env:
+#   BASEDIR
+#   LISTDIR
 
 
 find ${BASEDIR}sound_native/fullvoice/ -type f | sed "s#^${BASEDIR}##" | grep -v '\.a[a-z][a-z]$' > ${LISTDIR}fullvoice.txt

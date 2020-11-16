@@ -5,8 +5,18 @@ export  BASEDIR="/SNAA/magica/resource/download/asset/master/resource/"
 export  ORIGDIR="/SNAA/magica/resource/download/asset/vanilla/"
 export  LISTDIR="/tmp/snaa-tools/filelist/"
 export ASSETDIR="/tmp/snaa-tools/asset/"
+export CHARLIST="image_native/scene/download/char_list.json"
+
+# default
 export SNAASIZE="4194304"
 export SNAAMULT="2"
+
+# snaa
+# unset!
+
+# slice_1MB
+#export SNAASIZE="1048576"
+#export SNAAMULT="1"
 
 
 mkdir -p ${LISTDIR}

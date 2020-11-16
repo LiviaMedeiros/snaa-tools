@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# must be set!
-#ASSETDIR="/tmp/snaa-tools/asset/"
+# required env:
+#   ASSETDIR
 
 
 for asset in $(ls ${ASSETDIR}*.json)
