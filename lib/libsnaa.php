@@ -15,6 +15,16 @@ define('SNAASIZE', 4194304);
 define('SNAAMULT', 2);
 */
 
+function chunk_encode($f, $b, $e, $s = null) {
+	return 'CHUNK='.$f.','.$b.'-'.($e - 1).'#';
+}
+
+function chunk_read($str) {
+	return preg_match('/^CHUNK=([^,]*),([0-9]*)-([0-9]*)#$/', $str, $m)
+	     ? file_get_contents(BASEDIR.$m[1], false, null, $m[2], $m[3] - $m[2] + 1)
+	     : file_get_contents(BASEDIR.$str);
+}
+
 function calc_etag($filepath, $method = 's3') {
 	switch ($method) {
 		case 's3':
@@ -112,7 +122,7 @@ function file2asset($file) {
 			$chunk_e = $chunk_b + $chunk_s;
 			$file_list[] = [
 				'size' => $chunk_s,
-				'url' => 'CHUNK='.$file.','.$chunk_b.'-'.($chunk_e-1).'#'
+				'url' => chunk_encode($file, $chunk_b, $chunk_e)
 			];
 			$chunk_b = $chunk_e;
 		}
@@ -162,4 +172,38 @@ function generate_charlist($filecharlist, $fileasset) {
 
 	echo "charlist DONE: ".count($objs)." files from ".count($chars)." characters\n";
 	return file_put_contents(ASSETDIR.$fileasset, json_encode($objs, JSON_UNESCAPED_SLASHES));
+}
+
+function implement_asset($assetfile) {
+	$assets = json_decode(file_get_contents($assetfile), true);
+	echo "implement START: ".$assetfile." -> ".MADODIR."resource/\n";
+
+	$f = 0;
+	$c = 0;
+	$cnt = count($assets);
+	foreach ($assets as $asset) {
+		$filepath = MADODIR.'resource/'.$asset['path'];
+		$dirname = dirname($filepath);
+		if (!file_exists($dirname))
+			mkdir($dirname, 0755, true);
+		if (file_exists($filepath)) {
+			echo "file already exists: ".$filepath."\n";
+			continue;
+		}
+		echo (++$f)."/".$cnt."\r";
+		foreach ($asset['file_list'] as $file) {
+			$chunk = chunk_read($file['url']);
+			$filesize = strlen($chunk);
+			if ($filesize != $file['size'])
+				echo "size mismatch: ".$file['url']." is ".$filesize.", expected ".$file['size']."\n";
+			file_put_contents($filepath, $chunk, FILE_APPEND);
+			$c++;
+		}
+		$md5_file = md5_file($filepath);
+		if ($md5_file != $asset['md5'])
+			echo "md5 mismatch: ".$asset['path']." is ".$md5_file.", expected ".$asset['md5']."\n";
+	}
+
+	echo "implement DONE: ".$c." chunks in ".$f." files\n";
+	return true;
 }

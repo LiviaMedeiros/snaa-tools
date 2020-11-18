@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# must be set!
-#BASEDIR="/SNAA/magica/resource/download/asset/master/resource/"
-#LISTDIR="/tmp/snaa-tools/filelist/"
-#MADODIR="/tmp/snaa-tools/madomagi/"
-#MADOTAR="${HOME}/madomagi.tar.lzo"
+# required env:
+#   BASEDIR
+#   LISTDIR
+#   MADODIR
+#   MADOTAR
 
 
 MADOFILES=$(cat ${LISTDIR}main.txt ${LISTDIR}fullvoice.txt ${LISTDIR}voice.txt ${LISTDIR}movie_high.txt)
