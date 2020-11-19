@@ -1,11 +1,5 @@
 #!/bin/bash
-
-# CHANGE ME
-export  MADODIR="/tmp/snaa-tools/madomagi/"
-export  LISTDIR="/tmp/snaa-tools/filelist/"
-export ASSETDIR="/tmp/snaa-tools/asset/"
-export  BASEDIR="/SNAA/magica/resource/download/asset/master/resource/"
-export  MADOTAR="${HOME}/madomagi.tar.lzo"
+. ./SETME/env.sh
 
 
 mkdir -p ${MADODIR}

@@ -3,16 +3,12 @@
 
 
 mkdir -p ${LISTDIR}
-mkdir -p ${ASSETDIR}
 
 echo $(tput bold) ">>>" $(date +%H:%M:%S.%3N) ">>> generating filelists!" $(tput sgr0)
 bash ./parts/generate_filelists.sh
 
-echo $(tput bold) ">>>" $(date +%H:%M:%S.%3N) ">>> generating assets!" $(tput sgr0)
-php ./parts/generate_assets.php
-
-echo $(tput bold) ">>>" $(date +%H:%M:%S.%3N) ">>> compressing assets!" $(tput sgr0)
-bash ./parts/compress_assets.sh
+echo $(tput bold) ">>>" $(date +%H:%M:%S.%3N) ">>> rebuilding scenario!" $(tput sgr0)
+php ./parts/rebuild_scenario.php
 
 echo $(tput bold) ">>>" $(date +%H:%M:%S.%3N) ">>> all done!" $(tput sgr0)
 

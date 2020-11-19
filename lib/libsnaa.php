@@ -15,6 +15,43 @@ define('SNAASIZE', 4194304);
 define('SNAAMULT', 2);
 */
 
+function read_json($filepath) {
+	return json_decode(file_get_contents($filepath), true);
+}
+
+function write_json($filepath, $data, $json_format = 'loose') {
+	switch ($json_format) {
+		case 'loose':
+			$json_flags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
+			break;
+		case 'pretty':
+			$json_flags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT;
+			break;
+		case 'ascii':
+			$json_flags = JSON_UNESCAPED_SLASHES;
+			break;
+		case 'canonical':
+			$json_flags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
+			break;
+		default:
+			$json_flags = 0;
+	}
+	$filebody = json_encode($data, $json_flags);
+	file_put_contents($filepath, $filebody);
+	return strlen($filebody);
+}
+
+function rebase_json($filepath, $json_format = 'loose') {
+	$filesize = filesize($filepath);
+	$data = read_json($filepath);
+	$newsize = write_json($filepath, $data, $json_format);
+	return $newsize - $filesize;
+}
+
+function read_ugly_file_in_ugly_way($filepath) {
+	return json_decode(json_encode((array)simplexml_load_string(file_get_contents($filepath))), true);
+}
+
 function chunk_encode($f, $b, $e, $s = null) {
 	return 'CHUNK='.$f.','.$b.'-'.($e - 1).'#';
 }
@@ -72,7 +109,7 @@ function madomagi_db($dbfile, $quality = 'high', $voices = true) {
 		$db->query("INSERT INTO asset_json VALUES('".$assetfile."','\"".calc_etag($assetfile)."\"')");
 		if (in_array($assetfile, $metaassetfiles))
 			continue;
-		$asset = json_decode(file_get_contents(ASSETDIR.$assetfile), true);
+		$asset = read_json(ASSETDIR.$assetfile);
 
 		$values = [];
 		foreach ($asset as $file)
@@ -84,13 +121,13 @@ function madomagi_db($dbfile, $quality = 'high', $voices = true) {
 }
 
 function copy_asset($origasset, $fileasset) {
-	$asset = json_decode(file_get_contents(ORIGDIR.$origasset), true);
+	$asset = read_json(ORIGDIR.$origasset);
 	echo "copying: ".$origasset." -> ".$fileasset."\n" ;
-	return file_put_contents(ASSETDIR.$fileasset, json_encode($asset, JSON_UNESCAPED_SLASHES));
+	return write_json(ASSETDIR.$fileasset, $asset);
 }
 
 function reverse_asset($origasset, $filelist) {
-	$asset = json_decode(file_get_contents(ORIGDIR.$origasset), true);
+	$asset = read_json(ORIGDIR.$origasset);
 	$cnt = count($asset);
 	echo "reverse START: ".$origasset." -> ".$filelist."\n";
 
@@ -155,11 +192,11 @@ function generate_asset($filelist, $fileasset) {
 	}
 
 	echo "generate DONE: ".$cnt." files\n";
-	return file_put_contents(ASSETDIR.$fileasset, json_encode($objs, JSON_UNESCAPED_SLASHES));
+	return write_json(ASSETDIR.$fileasset, $objs);
 }
 
 function generate_charlist($filecharlist, $fileasset) {
-	$chars = json_decode(file_get_contents(BASEDIR.$filecharlist), true);
+	$chars = read_json(BASEDIR.$filecharlist);
 	echo "charlist START: ".$filecharlist." -> ".$fileasset."\n";
 
 	$objs = [
@@ -171,11 +208,11 @@ function generate_charlist($filecharlist, $fileasset) {
 	}
 
 	echo "charlist DONE: ".count($objs)." files from ".count($chars)." characters\n";
-	return file_put_contents(ASSETDIR.$fileasset, json_encode($objs, JSON_UNESCAPED_SLASHES));
+	return write_json(ASSETDIR.$fileasset, $objs, 'pretty');
 }
 
 function implement_asset($assetfile) {
-	$assets = json_decode(file_get_contents($assetfile), true);
+	$assets = read_json($assetfile);
 	echo "implement START: ".$assetfile." -> ".MADODIR."resource/\n";
 
 	$f = 0;
@@ -229,7 +266,7 @@ function plist_frame($data) {
 }
 
 function plist_extract($file_png, $file_plist, $file_dir) {
-	$plist = json_decode(json_encode((array)simplexml_load_string(file_get_contents($file_plist))), true);
+	$plist = read_ugly_file_in_ugly_way($file_plist);
 	echo "plist extract START: ".$file_png."\n";
 
 	$fkey = array_search('frames', $plist['dict']['key']);
@@ -248,5 +285,24 @@ function plist_extract($file_png, $file_plist, $file_dir) {
 	}
 
 	echo "plist extract DONE: ".$file_png."\n";
+	return true;
+}
+
+function rebuild_scenario($filelist) {
+	$files = explode("\n", file_get_contents(LISTDIR.$filelist));
+	$cnt = count($files) - 1;
+	echo "scenario START: ".$filelist."\n";
+
+	$i = 0;
+	$totes = [-1 => 0, 0 => 0, 1 => 0, 2 => 0];
+	foreach ($files as $file) {
+		if ($file == '') // empty last line
+			continue;
+		echo ($i++)."/".$cnt."\r";
+		$sizediff = rebase_json(BASEDIR.$file, 'loose');
+		$totes[($sizediff >0)-(0> $sizediff)]++;
+		$totes[2] += $sizediff;
+	}
+	echo "scenario DONE: ".$totes[-1]." decrease, ".$totes[0]." keep, ".$totes[1]." increase, total: ".sprintf("%+d",$totes[2])." bytes\n";
 	return true;
 }
