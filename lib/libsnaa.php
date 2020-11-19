@@ -207,3 +207,46 @@ function implement_asset($assetfile) {
 	echo "implement DONE: ".$c." chunks in ".$f." files\n";
 	return true;
 }
+
+function plist_writeframe($filepath, $frame, $file_png) {
+	$img = new Imagick($file_png);
+	$img->cropImage($frame['width'], $frame['height'], $frame['x'], $frame['y']);
+	$img->setImagePage(0, 0, 0, 0);
+	$img->writeImage($filepath);
+	$img->clear();
+	return true;
+}
+
+function plist_frame($data) {
+	$frame = [];
+	foreach (['width', 'height', 'originalWidth', 'originalHeight', 'x', 'y'] as $key) {
+		$n = array_search($key, $data['key']);
+		if ($n === false)
+			return false;
+		$frame[$key] = $data['integer'][$n];
+	}
+	return $frame;
+}
+
+function plist_extract($file_png, $file_plist, $file_dir) {
+	$plist = json_decode(json_encode((array)simplexml_load_string(file_get_contents($file_plist))), true);
+	echo "plist extract START: ".$file_png."\n";
+
+	$fkey = array_search('frames', $plist['dict']['key']);
+	if ($fkey === false)
+		return false;
+	$plist = $plist['dict']['dict'][$fkey];
+
+	foreach ($plist['key'] as $n => $framename) {
+		$frame = plist_frame($plist['dict'][$n]);
+		if ($frame === false) {
+			echo " skipping frame: ".$framename."\n";
+			continue;
+		}
+		echo " extracting frame: ".$framename."\n";
+		plist_writeframe($file_dir.$framename, $frame, $file_png);
+	}
+
+	echo "plist extract DONE: ".$file_png."\n";
+	return true;
+}
