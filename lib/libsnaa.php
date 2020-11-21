@@ -5,11 +5,13 @@ foreach (['BASEDIR', 'ORIGDIR', 'LISTDIR', 'ASSETDIR', 'MADODIR', 'CHARLIST', 'S
 		define($wedkey, $wednesday[$wedkey]);
 
 /*
-define('BASEDIR',  '/SNAA/magica/resource/download/asset/master/resource/');
-define('ORIGDIR',  '/SNAA/magica/resource/download/asset/master/vanilla/');
-define('LISTDIR',  '/tmp/snaa-tools/filelist/');
+define( 'BASEDIR', '/SNAA/magica/resource/download/asset/master/resource/');
+define( 'ORIGDIR', '/SNAA/magica/resource/download/asset/master/vanilla/');
+define( 'IMWBDIR', '/SNAA/magica/resource/image_web/');
+define( 'SNAALOG', '/tmp/snaa-tools/logs/');
+define( 'LISTDIR', '/tmp/snaa-tools/filelist/');
 define('ASSETDIR', '/tmp/snaa-tools/asset/');
-define('MADODIR',  '/tmp/snaa-tools/madomagi/');
+define( 'MADODIR', '/tmp/snaa-tools/madomagi/');
 define('CHARLIST', 'image_native/scene/download/char_list.json');
 define('SNAASIZE', 4194304);
 define('SNAAMULT', 2);
@@ -41,15 +43,36 @@ function write_json($filepath, $data, $json_format = 'loose') {
 	return strlen($filebody);
 }
 
-function rebase_json($filepath, $json_format = 'loose') {
+function rebuild_json($filepath, $json_format = 'loose') {
 	$filesize = filesize($filepath);
 	$data = read_json($filepath);
 	$newsize = write_json($filepath, $data, $json_format);
 	return $newsize - $filesize;
 }
 
+function read_ugly_file($filepath) {
+	return simplexml_load_string(file_get_contents($filepath));
+}
+
 function read_ugly_file_in_ugly_way($filepath) {
-	return json_decode(json_encode((array)simplexml_load_string(file_get_contents($filepath))), true);
+	return json_decode(json_encode((array)read_ugly_file($filepath)), true);
+}
+
+function write_ugly_file($filepath, $data, $xml_format = 'loose') {
+	$dom = new DOMDocument('1.0');
+	$dom->preserveWhiteSpace = false;
+	$dom->loadXML($data->asXML());
+	$dom->formatOutput = ($xml_format == 'pretty');
+	$filebody = $dom->saveXML();
+	file_put_contents($filepath, $filebody);
+	return strlen($filebody);
+}
+
+function rebuild_xml($filepath, $xml_format = 'loose') {
+	$filesize = filesize($filepath);
+	$data = read_ugly_file($filepath);
+	$newsize = write_ugly_file($filepath, $data, $xml_format);
+	return $newsize - $filesize;
 }
 
 function chunk_encode($f, $b, $e, $s = null) {
@@ -288,10 +311,10 @@ function plist_extract($file_png, $file_plist, $file_dir) {
 	return true;
 }
 
-function rebuild_scenario($filelist) {
+function optimize_scenario($filelist) {
 	$files = explode("\n", file_get_contents(LISTDIR.$filelist));
 	$cnt = count($files) - 1;
-	echo "scenario START: ".$filelist."\n";
+	echo "optimize scenario START: ".$filelist."\n";
 
 	$i = 0;
 	$totes = [-1 => 0, 0 => 0, 1 => 0, 2 => 0];
@@ -299,10 +322,29 @@ function rebuild_scenario($filelist) {
 		if ($file == '') // empty last line
 			continue;
 		echo ($i++)."/".$cnt."\r";
-		$sizediff = rebase_json(BASEDIR.$file, 'loose');
+		$sizediff = rebuild_json(BASEDIR.$file, 'loose');
 		$totes[($sizediff >0)-(0> $sizediff)]++;
 		$totes[2] += $sizediff;
 	}
-	echo "scenario DONE: ".$totes[-1]." decrease, ".$totes[0]." keep, ".$totes[1]." increase, total: ".sprintf("%+d",$totes[2])." bytes\n";
+	echo "optimize scenario DONE: ".$totes[-1]." decrease, ".$totes[0]." keep, ".$totes[1]." increase, total: ".sprintf("%+d",$totes[2])." bytes\n";
+	return true;
+}
+
+function optimize_xml($filelist) {
+	$files = explode("\n", file_get_contents(LISTDIR.$filelist));
+	$cnt = count($files) - 1;
+	echo "optimize xml START: ".$filelist."\n";
+
+	$i = 0;
+	$totes = [-1 => 0, 0 => 0, 1 => 0, 2 => 0];
+	foreach ($files as $file) {
+		if ($file == '') // empty last line
+			continue;
+		echo ($i++)."/".$cnt."\r";
+		$sizediff = rebuild_xml(BASEDIR.$file, 'loose');
+		$totes[($sizediff >0)-(0> $sizediff)]++;
+		$totes[2] += $sizediff;
+	}
+	echo "optimize xml DONE: ".$totes[-1]." decrease, ".$totes[0]." keep, ".$totes[1]." increase, total: ".sprintf("%+d",$totes[2])." bytes\n";
 	return true;
 }

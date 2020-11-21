@@ -3,6 +3,8 @@
 # SET ME
 export  BASEDIR="/SNAA/magica/resource/download/asset/master/resource/"
 export  ORIGDIR="/SNAA/magica/resource/download/asset/vanilla/"
+export  IMWBDIR="/SNAA/magica/resource/image_web/"
+export  SNAALOG="/tmp/snaa-tools/logs/"
 export  LISTDIR="/tmp/snaa-tools/filelist/"
 export ASSETDIR="/tmp/snaa-tools/asset/"
 export CHARLIST="image_native/scene/download/char_list.json"

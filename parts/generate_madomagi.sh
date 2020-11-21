@@ -7,7 +7,7 @@
 #   MADOTAR
 
 
-MADOFILES=$(cat ${LISTDIR}main.txt ${LISTDIR}fullvoice.txt ${LISTDIR}voice.txt ${LISTDIR}movie_high.txt)
+MADOFILES=$(cat ${LISTDIR}main.snaa ${LISTDIR}fullvoice.snaa ${LISTDIR}voice.snaa ${LISTDIR}movie_high.snaa)
 MADOSUBDIRS=$(echo ${MADOFILES} | xargs -n 1 dirname | sort -u)
 
 echo 'madomagi directory structure START'
@@ -30,6 +30,5 @@ echo -e '\033[Kmadomagi symlink DONE'
 echo 'madomagi.tar.lzo START:' ${MADOTAR}
 tar --lzop -chf ${MADOTAR} -C $(dirname ${MADODIR}) madomagi
 echo 'madomagi.tar.lzo DONE:' ${MADOTAR}
-
 
 exit 0
