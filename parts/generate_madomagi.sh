@@ -7,6 +7,7 @@
 #   MADOTAR
 
 
+echo -ne "loading...\r"
 MADOFILES=$(cat ${LISTDIR}main.snaa ${LISTDIR}fullvoice.snaa ${LISTDIR}voice.snaa ${LISTDIR}movie_high.snaa)
 MADOSUBDIRS=$(echo ${MADOFILES} | xargs -n 1 dirname | sort -u)
 
