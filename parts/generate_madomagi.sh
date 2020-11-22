@@ -9,7 +9,7 @@
 
 echo -ne "loading...\r"
 MADOFILES=$(cat ${LISTDIR}main.snaa ${LISTDIR}fullvoice.snaa ${LISTDIR}voice.snaa ${LISTDIR}movie_high.snaa)
-MADOSUBDIRS=$(echo ${MADOFILES} | xargs -n 1 dirname | sort -u)
+MADOSUBDIRS=$(echo ${MADOFILES} | pv -s $(echo ${MADOFILES} | wc -c) | xargs -n 1 dirname | sort -u)
 
 echo 'madomagi directory structure START'
 for MADOSUBDIR in ${MADOSUBDIRS}
@@ -29,7 +29,7 @@ done
 echo -e '\033[Kmadomagi symlink DONE'
 
 echo 'madomagi.tar.lzo START:' ${MADOTAR}
-tar --lzop -chf ${MADOTAR} -C $(dirname ${MADODIR}) madomagi
+tar -chf - -C $(dirname ${MADODIR}) madomagi | pv -s $(du -sbL ${MADODIR} | awk '{print $1}') | lzop > ${MADOTAR}
 echo 'madomagi.tar.lzo DONE:' ${MADOTAR}
 
 exit 0
