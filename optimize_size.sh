@@ -2,9 +2,6 @@
 . ./SETME/env.sh
 
 
-mkdir -p ${LISTDIR}
-mkdir -p ${SNAALOG}
-
 echo $(tput bold) ">>>" $(date +%H:%M:%S.%3N) ">>> generating filelists!" $(tput sgr0)
 bash ./parts/generate_filelists.sh
 

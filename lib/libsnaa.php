@@ -234,6 +234,47 @@ function generate_charlist($filecharlist, $fileasset) {
 	return write_json(ASSETDIR.$fileasset, $objs, 'pretty');
 }
 
+function check_asset($assetfile, $dir) {
+	$assets = read_json($assetfile);
+	echo "check asset START: ".$assetfile." <=> ".$dir."\n";
+	if (!is_dir($dir)) {
+		echo "CHECK FAILED: ".$dir." is not a directory\n";
+		return false;
+	}
+
+	$f = 0;
+	$allgood = true;
+	$totes = ['expected' => 0, 'real' => 0];
+	$cnt = count($assets);
+	foreach ($assets as $asset) {
+		$filepath = $dir.$asset['path'];
+		echo (++$f)."/".$cnt."\r";
+		$filesize = 0;
+		foreach ($asset['file_list'] as $file)
+			$filesize += $file['size'];
+		$totes['expected'] += $filesize;
+		if (!file_exists($filepath)) {
+			$allgood = false;
+			echo "FILE IS MISSING: ".$filepath."\n";
+			continue;
+		}
+		$real_filesize = filesize($filepath);
+		if ($filesize != $real_filesize) {
+			$allgood = false;
+			echo "LENGHT MISMATCH: ".$file['url']." is ".$filesize.", expected ".$real_filesize."\n";
+		}
+		$totes['real'] += $real_filesize;
+		$md5_file = md5_file($filepath);
+		if ($md5_file != $asset['md5']) {
+			$allgood = false;
+			echo "MD5SUM MISMATCH: ".$asset['path']." is ".$md5_file.", expected ".$asset['md5']."\n";
+		}
+	}
+
+	echo "check asset DONE: ".$totes['real']."/".$totes['expected']." bytes in ".$f." files\n";
+	return $allgood;
+}
+
 function implement_asset($assetfile) {
 	$assets = read_json($assetfile);
 	echo "implement START: ".$assetfile." -> ".MADODIR."resource/\n";

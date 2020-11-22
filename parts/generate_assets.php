@@ -13,7 +13,7 @@ require_once('lib/libsnaa.php');
 */
 
 
-copy_asset('asset_config.json.gz',    'asset_config.json');
+copy_asset('asset_config.json.gz', 'asset_config.json');
 
 if (defined('CHARLIST'))
 	generate_charlist(CHARLIST, 'asset_char_list.json');

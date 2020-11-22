@@ -1,14 +1,16 @@
 #!/bin/bash
 
 # SET ME
-export  BASEDIR="/SNAA/magica/resource/download/asset/master/resource/"
-export  ORIGDIR="/SNAA/magica/resource/download/asset/vanilla/"
-export  IMWBDIR="/SNAA/magica/resource/image_web/"
-export  SNAALOG="/tmp/snaa-tools/logs/"
-export  LISTDIR="/tmp/snaa-tools/filelist/"
-export ASSETDIR="/tmp/snaa-tools/asset/"
+export  ROOTDIR="/SNAA/magica/"
+export SNAAROOT="/tmp/snaa-tools/"
+export  BASEDIR="${ROOTDIR}resource/download/asset/master/resource/"
+export  ORIGDIR="${ROOTDIR}resource/download/asset/vanilla/"
+export  IMWBDIR="${ROOTDIR}resource/image_web/"
+export  SNAALOG="${SNAAROOT}logs/"
+export  LISTDIR="${SNAAROOT}filelist/"
+export ASSETDIR="${SNAAROOT}asset/"
 export CHARLIST="image_native/scene/download/char_list.json"
-export  MADODIR="/tmp/snaa-tools/madomagi/"
+export  MADODIR="${SNAAROOT}madomagi/"
 export  MADOTAR="${HOME}/madomagi.tar.lzo"
 
 # default
@@ -25,3 +27,9 @@ export SNAAMULT="2"
 # sliced_64KB
 #export SNAASIZE="65536"
 #export SNAAMULT="1"
+
+
+mkdir -p ${LISTDIR}
+mkdir -p ${ASSETDIR}
+mkdir -p ${SNAALOG}
+mkdir -p ${MADODIR}
