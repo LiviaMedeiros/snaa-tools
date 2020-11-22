@@ -39,4 +39,4 @@ chunking: default (4194304x2)
 
 etag: "MD5SUM" (aws)
 
-<p align="right"><img src="https://xn--80aalyho.xn--p1ai/magireco/NAgitan/img/mumiwhy.png"></p>
+<p align="right"><img src="https://xn--80aalyho.xn--p1ai/magireco/NAgitan/img/mumiwhy.png" /></p>
