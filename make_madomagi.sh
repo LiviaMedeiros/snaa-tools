@@ -2,13 +2,13 @@
 . ./SETME/env.sh
 
 
-echo $(tput bold) ">>>" $(date +%H:%M:%S.%3N) ">>> preparing madomagi!" $(tput sgr0)
+snaa_print "preparing madomagi!"
 php ./parts/generate_madomagi.php
 
-echo $(tput bold) ">>>" $(date +%H:%M:%S.%3N) ">>> making madomagi!" $(tput sgr0)
+snaa_print "making madomagi!"
 bash ./parts/generate_madomagi.sh
 
-echo $(tput bold) ">>>" $(date +%H:%M:%S.%3N) ">>> all done!" $(tput sgr0)
+snaa_print "all done!"
 
 
 exit 0

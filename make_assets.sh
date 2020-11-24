@@ -1,16 +1,16 @@
 #!/bin/bash
-. ./SETME/env.sh
+[ -f ./SETME/env.sh ] && . ./SETME/env.sh || { echo 'snaa'; exit 1; }
 
 
-echo $(tput bold) ">>>" $(date +%H:%M:%S.%3N) ">>> generating filelists!" $(tput sgr0)
+snaa_print "generating filelists!"
 bash ./parts/generate_filelists.sh
 
-echo $(tput bold) ">>>" $(date +%H:%M:%S.%3N) ">>> generating assets!" $(tput sgr0)
+snaa_print "generating assets!"
 php ./parts/generate_assets.php
 
-echo $(tput bold) ">>>" $(date +%H:%M:%S.%3N) ">>> compressing assets!" $(tput sgr0)
+snaa_print "compressing assets!"
 bash ./parts/compress_assets.sh
 
-echo $(tput bold) ">>>" $(date +%H:%M:%S.%3N) ">>> all done!" $(tput sgr0)
+snaa_print "all done!"
 
 exit 0

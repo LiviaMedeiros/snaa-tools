@@ -1,8 +1,8 @@
 #!/bin/bash
-. ./SETME/env.sh
+[ -f ./SETME/env.sh ] && . ./SETME/env.sh || { echo 'snaa'; exit 1; }
 
 
-echo $(tput bold) ">>>" $(date +%H:%M:%S.%3N) ">>> deleting everything!" $(tput sgr0)
+snaa_print "deleting everything!"
 if [ -z ${SNAAROOT} ]; then
 	echo 'you just snaapped away your files'
 else
@@ -10,6 +10,6 @@ else
 	rm -rf ${SNAAROOT}
 fi
 
-echo $(tput bold) ">>>" $(date +%H:%M:%S.%3N) ">>> all done!" $(tput sgr0)
+snaa_print "all done!"
 
 exit 0

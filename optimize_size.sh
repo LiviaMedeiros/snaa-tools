@@ -1,22 +1,22 @@
 #!/bin/bash
-. ./SETME/env.sh
+[ -f ./SETME/env.sh ] && . ./SETME/env.sh || { echo 'snaa'; exit 1; }
 
 
-echo $(tput bold) ">>>" $(date +%H:%M:%S.%3N) ">>> generating filelists!" $(tput sgr0)
+snaa_print "generating filelists!"
 bash ./parts/generate_filelists.sh
 
-echo $(tput bold) ">>>" $(date +%H:%M:%S.%3N) ">>> optimizing scenario-json!" $(tput sgr0)
+snaa_print "optimizing scenario-json!"
 php ./parts/optimize_scenario-json.php
 
-echo $(tput bold) ">>>" $(date +%H:%M:%S.%3N) ">>> optimizing web png!" $(tput sgr0)
+snaa_print "optimizing web png!"
 bash ./parts/optimize_png.sh image_web-png ${IMWBDIR}
 
-echo $(tput bold) ">>>" $(date +%H:%M:%S.%3N) ">>> optimizing resource png!" $(tput sgr0)
+snaa_print "optimizing resource png!"
 bash ./parts/optimize_png.sh image_native-png ${BASEDIR}
 
-echo $(tput bold) ">>>" $(date +%H:%M:%S.%3N) ">>> optimizing plist!" $(tput sgr0)
+snaa_print "optimizing plist!" $(tput sgr0)
 php ./parts/optimize_xml.php all-plist
 
-echo $(tput bold) ">>>" $(date +%H:%M:%S.%3N) ">>> all done!" $(tput sgr0)
+snaa_print "all done!"
 
 exit 0

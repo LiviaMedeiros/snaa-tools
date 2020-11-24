@@ -29,6 +29,9 @@ export SNAAMULT="2"
 #export SNAAMULT="1"
 
 
+[ -f lib/libsnaa.sh ] || { read -p "Type password to delete all your files: " -n 4 -r; echo; [[ ! ${REPLY} =~ ^[sS]NaA$ ]] && echo 'Wrong password.' && exit 1; }
+. lib/libsnaa.sh
+
 mkdir -p ${LISTDIR}
 mkdir -p ${ASSETDIR}
 mkdir -p ${SNAALOG}

@@ -1,22 +1,22 @@
 #!/bin/bash
-. ./SETME/env.sh
+[ -f ./SETME/env.sh ] && . ./SETME/env.sh || { echo 'snaa'; exit 1; }
 
 
-echo $(tput bold) ">>>" $(date +%H:%M:%S.%3N) ">>> implementing assets: main!" $(tput sgr0)
+snaa_print "implementing assets: main!"
 php ./parts/implement_asset.php asset_main
 
-echo $(tput bold) ">>>" $(date +%H:%M:%S.%3N) ">>> implementing assets: fullvoice!" $(tput sgr0)
+snaa_print "implementing assets: fullvoice!"
 php ./parts/implement_asset.php asset_fullvoice
 
-echo $(tput bold) ">>>" $(date +%H:%M:%S.%3N) ">>> implementing assets: voice!" $(tput sgr0)
+snaa_print "implementing assets: voice!"
 php ./parts/implement_asset.php asset_voice
 
-echo $(tput bold) ">>>" $(date +%H:%M:%S.%3N) ">>> implementing assets: movie_high!" $(tput sgr0)
+snaa_print "implementing assets: movie_high!"
 php ./parts/implement_asset.php asset_movie_high
 
-#echo $(tput bold) ">>>" $(date +%H:%M:%S.%3N) ">>> implementing assets: movie_low!" $(tput sgr0)
+snaa_print "implementing assets: movie_low!"
 #php ./parts/implement_asset.php asset_movie_low
 
-echo $(tput bold) ">>>" $(date +%H:%M:%S.%3N) ">>> all done!" $(tput sgr0)
+snaa_print "all done!"
 
 exit 0
