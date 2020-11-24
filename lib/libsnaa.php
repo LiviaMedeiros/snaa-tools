@@ -234,8 +234,10 @@ function generate_charlist($filecharlist, $fileasset) {
 	return write_json(ASSETDIR.$fileasset, $objs, 'pretty');
 }
 
-function check_asset($assetfile, $dir) {
+function check_asset($assetfile, $dir = false) {
 	$assets = read_json($assetfile);
+	if (!$dir)
+		$dir = MADODIR.'resource/';
 	echo "check asset START: ".$assetfile." <=> ".$dir."\n";
 	if (!is_dir($dir)) {
 		echo "CHECK FAILED: ".$dir." is not a directory\n";
@@ -275,15 +277,17 @@ function check_asset($assetfile, $dir) {
 	return $allgood;
 }
 
-function implement_asset($assetfile) {
+function implement_asset($assetfile, $dir = false) {
 	$assets = read_json($assetfile);
-	echo "implement START: ".$assetfile." -> ".MADODIR."resource/\n";
+	if (!$dir)
+		$dir = MADODIR.'resource/';
+	echo "implement START: ".$assetfile." -> ".$dir."\n";
 
 	$f = 0;
 	$c = 0;
 	$cnt = count($assets);
 	foreach ($assets as $asset) {
-		$filepath = MADODIR.'resource/'.$asset['path'];
+		$filepath = $dir.$asset['path'];
 		$dirname = dirname($filepath);
 		if (!file_exists($dirname))
 			mkdir($dirname, 0755, true);
