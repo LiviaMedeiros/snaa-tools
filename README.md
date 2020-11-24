@@ -6,7 +6,7 @@ don't forget to set environment properly. in both files.
 snaa-tools are non-interactive and they will snaap your filesystem from any mistake.
 
 ### requirements
-php, bash, coreutils, findutils, tar, grep, sed, parallel, zopfli, etc.
+php, bash, coreutils, findutils, tar, grep, sed, parallel, zopfli, xz, etc.
 
 ### examples
 example usage for brave people:

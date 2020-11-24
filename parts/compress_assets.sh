@@ -9,6 +9,7 @@ do
 	echo gzip ${asset}
 #	gzip -fkn9 ${asset}
 	zopfli -i50 ${asset}
+	xz -ke9 ${asset}
 done
 
 exit 0
