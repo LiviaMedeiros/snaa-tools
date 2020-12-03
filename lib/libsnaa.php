@@ -1,10 +1,12 @@
 <?php
+declare(strict_types = 1);
 $wednesday = getenv(); // $_ENV may be disabled
-foreach (['BASEDIR', 'ORIGDIR', 'LISTDIR', 'ASSETDIR', 'MADODIR', 'CHARLIST', 'SNAASIZE', 'SNAAMULT'] as $wedkey)
+foreach (['DOFILES', 'BASEDIR', 'ORIGDIR', 'LISTDIR', 'ASSETDIR', 'MADODIR', 'CHARLIST', 'SNAASIZE', 'SNAAMULT'] as $wedkey)
 	if (isset($wednesday[$wedkey]))
 		define($wedkey, $wednesday[$wedkey]);
 
 /*
+define( 'DOFILES', false);
 define( 'BASEDIR', '/SNAA/magica/resource/download/asset/master/resource/');
 define( 'ORIGDIR', '/SNAA/magica/resource/download/asset/master/vanilla/');
 define( 'IMWBDIR', '/SNAA/magica/resource/image_web/');
@@ -16,6 +18,10 @@ define('CHARLIST', 'image_native/scene/download/char_list.json');
 define('SNAASIZE', 4194304);
 define('SNAAMULT', 2);
 */
+
+function write_file($filepath, $filebody, $flags = 0) {
+	return (defined('DOFILES') && DOFILES) ? file_put_contents($file, $data, $flags) : false;
+}
 
 function read_json($filepath) {
 	return json_decode(file_get_contents($filepath), true);
@@ -39,7 +45,7 @@ function write_json($filepath, $data, $json_format = 'loose') {
 			$json_flags = 0;
 	}
 	$filebody = json_encode($data, $json_flags);
-	file_put_contents($filepath, $filebody);
+	write_file($filepath, $filebody);
 	return strlen($filebody);
 }
 
@@ -64,7 +70,7 @@ function write_ugly_file($filepath, $data, $xml_format = 'loose') {
 	$dom->loadXML($data->asXML());
 	$dom->formatOutput = ($xml_format == 'pretty');
 	$filebody = $dom->saveXML();
-	file_put_contents($filepath, $filebody);
+	write_file($filepath, $filebody);
 	return strlen($filebody);
 }
 
@@ -98,14 +104,62 @@ function calc_etag($filepath, $method = 's3') {
 	}
 }
 
+function asset_localpath($file) {
+	return str_replace(['movie/char/high/', 'movie/char/low/'], ['movie/char/', 'movie/char/'], $file);
+}
+
+function is_ugly_chunk($file) { // split --bytes=1048576 --suffix-length=3
+	return preg_match('/\.a[a-z][a-z]$/', $file);
+}
+
+function split_prefix($num, $len = 3) {
+	$a = range('a', 'z');
+	$z = 26;
+	$res = '';
+	for ($i = $len - 1; $i > 0; $i--)
+		$res .= $a[intdiv($num, pow($z, $i))];
+	return $res . $a[$num % $z];
+}
+
+function split_file($filepath, $outpath, $chunksize = 1048576, $delete = false) {
+	$filesize = filesize($filepath);
+	if ($filesize <= $chunksize)
+		return false;
+
+	$md5_file = md5_file($filepath);
+	$res = [
+		'file' => $filepath,
+		'size' => $filesize,
+		'md5' => $md5_file,
+		'chunks' => []
+	];
+
+	for ($i = 0, $j = 0; $i < $filesize; $i += $chunksize, $j++) {
+		$chunk = file_get_contents($filepath, false, null, $i, $chunksize);
+		$md5chunk = md5($chunk);
+		$chunkpath = $outpath.'.'.split_prefix($j);
+		write_file($chunkpath, $chunk);
+		$res['chunks'][] = [
+			'file' => $chunkpath,
+			'size' => $chunksize,
+			'md5' => $md5chunk
+		];
+	}
+	if ($delete)
+		unlink($filepath);
+
+	return $res;
+}
+
 function madomagi_C5XyOsaM() {
 	$C5XyOsaM = [
 		'C5XyOsaM' => '8c88d9d9d8888f8990dcdedfd89089d9dc8a90858c85df908e8a8cdcd98b888f8588df8f'
 	];
-	return file_put_contents(MADODIR.'C5XyOsaM.json', json_encode($C5XyOsaM));
+	return write_file(MADODIR.'C5XyOsaM.json', json_encode($C5XyOsaM));
 }
 
 function madomagi_db($dbfile, $quality = 'high', $voices = true) {
+	$dbpath = MADODIR.$dbfile;
 	$metaassetfiles = [
 		'asset_config.json',
 		'asset_char_list.json',
@@ -120,9 +174,9 @@ function madomagi_db($dbfile, $quality = 'high', $voices = true) {
 	else if ($quality == 'low')
 		array_push($assetfiles, 'asset_movie_low.json');
 
-	if (is_file(MADODIR.$dbfile))
-		unlink(MADODIR.$dbfile);
-	$db = new SQLite3(MADODIR.$dbfile);
+	if (is_file($dbpath))
+		unlink($dbpath);
+	$db = new SQLite3($dbpath);
 	$db->query("CREATE TABLE download_asset(path char(128) primary key,md5 char(128))");
 	$db->query("CREATE TABLE asset_json(file char(128) primary key,etag char(128))");
 
@@ -133,14 +187,10 @@ function madomagi_db($dbfile, $quality = 'high', $voices = true) {
 		if (in_array($assetfile, $metaassetfiles))
 			continue;
 		$asset = read_json(ASSETDIR.$assetfile);
-
-		$values = [];
-		foreach ($asset as $file)
-			$values[] = "('resource/".$file['path']."','".$file['md5']."')";
-
+		$values = array_map(function($file) { return "('resource/".$file['path']."','".$file['md5']."')"; }, $asset);
 		$db->query("INSERT INTO download_asset VALUES ".implode(",",$values));
 	}
-	return true;
+	return filesize($dbpath);
 }
 
 function copy_asset($origasset, $fileasset) {
@@ -159,21 +209,21 @@ function reverse_asset($origasset, $filelist) {
 	$s = 0;
 	foreach ($asset as $file) {
 		echo ($i++)."/".$cnt."\r";
-		if (preg_match('/\.a[a-z][a-z]$/', $file['path']))
+		if (is_ugly_chunk($file['path']))
 			$s++;
 		else
 			$files .= $file['path']."\n";
 	}
 
 	echo "reverse DONE: ".$s." skips in ".$cnt." files\n";
-	return file_put_contents(LISTDIR.$filelist, $files);
+	return write_file(LISTDIR.$filelist, $files);
 }
 
 function file2asset($file) {
 	$filepath = BASEDIR.$file;
 	$filesize = filesize($filepath);
 	$md5_file = md5_file($filepath);
-	$userfile = str_replace(['movie/char/high/', 'movie/char/low/'], ['movie/char/', 'movie/char/'], $file);
+	$userfile = asset_localpath($file);
 
 	$file_list = [];
 	if (defined('SNAASIZE') && defined('SNAAMULT') && $filesize > SNAASIZE * SNAAMULT) {
@@ -207,6 +257,7 @@ function generate_asset($filelist, $fileasset) {
 
 	$objs = [];
 	$i = 0;
+	//$objs = array_map('file2asset', $files);
 	foreach ($files as $file) {
 		if ($file == '') // empty last line
 			continue;
@@ -234,18 +285,17 @@ function generate_charlist($filecharlist, $fileasset) {
 	return write_json(ASSETDIR.$fileasset, $objs, 'pretty');
 }
 
-function check_asset($assetfile, $dir = false) {
+function check_asset($assetfile, $dir = null) {
 	$assets = read_json($assetfile);
-	if (!$dir)
-		$dir = MADODIR.'resource/';
+	$dir = $dir ?? MADODIR.'resource/';
 	echo "check asset START: ".$assetfile." <=> ".$dir."\n";
 	if (!is_dir($dir)) {
 		echo "CHECK FAILED: ".$dir." is not a directory\n";
 		return false;
 	}
 
-	$f = 0;
 	$allgood = true;
+	$f = 0;
 	$totes = ['expected' => 0, 'real' => 0];
 	$cnt = count($assets);
 	foreach ($assets as $asset) {
@@ -256,20 +306,20 @@ function check_asset($assetfile, $dir = false) {
 			$filesize += $file['size'];
 		$totes['expected'] += $filesize;
 		if (!file_exists($filepath)) {
-			$allgood = false;
 			echo "FILE IS MISSING: ".$filepath."\n";
+			$allgood = false;
 			continue;
 		}
 		$real_filesize = filesize($filepath);
 		if ($filesize != $real_filesize) {
-			$allgood = false;
 			echo "LENGHT MISMATCH: ".$file['url']." is ".$filesize.", expected ".$real_filesize."\n";
+			$allgood = false;
 		}
 		$totes['real'] += $real_filesize;
 		$md5_file = md5_file($filepath);
 		if ($md5_file != $asset['md5']) {
-			$allgood = false;
 			echo "MD5SUM MISMATCH: ".$asset['path']." is ".$md5_file.", expected ".$asset['md5']."\n";
+			$allgood = false;
 		}
 	}
 
@@ -277,12 +327,12 @@ function check_asset($assetfile, $dir = false) {
 	return $allgood;
 }
 
-function implement_asset($assetfile, $dir = false) {
+function implement_asset($assetfile, $dir = null) {
 	$assets = read_json($assetfile);
-	if (!$dir)
-		$dir = MADODIR.'resource/';
+	$dir = $dir ?? MADODIR.'resource/';
 	echo "implement START: ".$assetfile." -> ".$dir."\n";
 
+	$allgood = true;
 	$f = 0;
 	$c = 0;
 	$cnt = count($assets);
@@ -293,24 +343,29 @@ function implement_asset($assetfile, $dir = false) {
 			mkdir($dirname, 0755, true);
 		if (file_exists($filepath)) {
 			echo "file already exists: ".$filepath."\n";
+			$allgood = false;
 			continue;
 		}
 		echo (++$f)."/".$cnt."\r";
 		foreach ($asset['file_list'] as $file) {
 			$chunk = chunk_read($file['url']);
 			$filesize = strlen($chunk);
-			if ($filesize != $file['size'])
+			if ($filesize != $file['size']) {
 				echo "size mismatch: ".$file['url']." is ".$filesize.", expected ".$file['size']."\n";
-			file_put_contents($filepath, $chunk, FILE_APPEND);
+				$allgood = false;
+			}
+			write_file($filepath, $chunk, FILE_APPEND);
 			$c++;
 		}
 		$md5_file = md5_file($filepath);
-		if ($md5_file != $asset['md5'])
+		if ($md5_file != $asset['md5']) {
 			echo "md5 mismatch: ".$asset['path']." is ".$md5_file.", expected ".$asset['md5']."\n";
+			$allgood = false;
+		}
 	}
 
 	echo "implement DONE: ".$c." chunks in ".$f." files\n";
-	return true;
+	return $allgood;
 }
 
 function plist_writeframe($filepath, $frame, $file_png) {
@@ -356,10 +411,10 @@ function plist_extract($file_png, $file_plist, $file_dir) {
 	return true;
 }
 
-function optimize_scenario($filelist) {
+function optimize_json($filelist) {
 	$files = explode("\n", file_get_contents(LISTDIR.$filelist));
 	$cnt = count($files) - 1;
-	echo "optimize scenario START: ".$filelist."\n";
+	echo "optimize json START: ".$filelist."\n";
 
 	$i = 0;
 	$totes = [-1 => 0, 0 => 0, 1 => 0, 2 => 0];
@@ -368,10 +423,10 @@ function optimize_scenario($filelist) {
 			continue;
 		echo ($i++)."/".$cnt."\r";
 		$sizediff = rebuild_json(BASEDIR.$file, 'loose');
-		$totes[($sizediff >0)-(0> $sizediff)]++;
+		$totes[$sizediff <=> 0]++;
 		$totes[2] += $sizediff;
 	}
-	echo "optimize scenario DONE: ".$totes[-1]." decrease, ".$totes[0]." keep, ".$totes[1]." increase, total: ".sprintf("%+d",$totes[2])." bytes\n";
+	echo "optimize json DONE: ".$totes[-1]." decrease, ".$totes[0]." keep, ".$totes[1]." increase, total: ".sprintf("%+d",$totes[2])." bytes\n";
 	return true;
 }
 
@@ -387,7 +442,7 @@ function optimize_xml($filelist) {
 			continue;
 		echo ($i++)."/".$cnt."\r";
 		$sizediff = rebuild_xml(BASEDIR.$file, 'loose');
-		$totes[($sizediff >0)-(0> $sizediff)]++;
+		$totes[$sizediff <=> 0]++;
 		$totes[2] += $sizediff;
 	}
 	echo "optimize xml DONE: ".$totes[-1]." decrease, ".$totes[0]." keep, ".$totes[1]." increase, total: ".sprintf("%+d",$totes[2])." bytes\n";

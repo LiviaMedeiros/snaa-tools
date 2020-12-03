@@ -40,6 +40,14 @@ find ${BASEDIR}scenario/json/ -type f -name "*.json" \
      | sed "s#^${BASEDIR}##" > ${LISTDIR}scenario-json.snaa
 wc -l ${LISTDIR}scenario-json.snaa
 
+find ${BASEDIR}image_native/live2d/ -type f -name "*.json" \
+     | sed "s#^${BASEDIR}##" > ${LISTDIR}live2d-json.snaa
+wc -l ${LISTDIR}live2d-json.snaa
+
+find ${BASEDIR}image_native/ -type f -name "*.ExportJson" \
+     | sed "s#^${BASEDIR}##" > ${LISTDIR}image_native-exportjson.snaa
+wc -l ${LISTDIR}image_native-exportjson.snaa
+
 find ${BASEDIR}sound_native -type f -name "*.hca" \
      | sed "s#^${BASEDIR}##" > ${LISTDIR}sound_native-hca.snaa
 wc -l ${LISTDIR}sound_native-hca.snaa

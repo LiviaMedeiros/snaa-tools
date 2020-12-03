@@ -7,4 +7,4 @@ require_once('lib/libsnaa.php');
 */
 
 
-optimize_scenario('scenario-json.snaa');
+optimize_json($argv[1].'.snaa');
