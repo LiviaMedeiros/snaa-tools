@@ -12,6 +12,8 @@ export ASSETDIR="${SNAAROOT}asset/"
 export CHARLIST="image_native/scene/download/char_list.json"
 export  MADODIR="${SNAAROOT}madomagi/"
 export  MADOTAR="${HOME}/madomagi.tar.lzo"
+export IROEPOCH="2017-03-17T10:39:13Z"
+export DOFILES="1"
 
 # default
 export SNAASIZE="4194304"
@@ -20,11 +22,11 @@ export SNAAMULT="2"
 # snaa
 # unset!
 
-# sliced_1MB
+# slice_1MB
 #export SNAASIZE="1048576"
 #export SNAAMULT="1"
 
-# sliced_64KB
+# slice_64KB
 #export SNAASIZE="65536"
 #export SNAAMULT="1"
 

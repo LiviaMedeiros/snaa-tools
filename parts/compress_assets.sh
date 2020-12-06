@@ -6,7 +6,7 @@
 
 for asset in $(ls ${ASSETDIR}*.json)
 do
-	echo gzip ${asset}
+	echo compressing ${asset}
 #	gzip -fkn9 ${asset}
 	zopfli -i50 ${asset}
 	xz -fke9 ${asset}

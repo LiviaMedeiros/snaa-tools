@@ -15,12 +15,21 @@ define( 'LISTDIR', '/tmp/snaa-tools/filelist/');
 define('ASSETDIR', '/tmp/snaa-tools/asset/');
 define( 'MADODIR', '/tmp/snaa-tools/madomagi/');
 define('CHARLIST', 'image_native/scene/download/char_list.json');
+define('IROEPOCH', '2017-03-17T10:39:13Z');
 define('SNAASIZE', 4194304);
 define('SNAAMULT', 2);
 */
 
+function touch_iroepoch($filepath) {
+	return touch($filepath, strtotime(IROEPOCH));
+}
+
+function read_list($filepath) {
+	return file($filepath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+}
+
 function write_file($filepath, $filebody, $flags = 0) {
-	return (defined('DOFILES') && DOFILES) ? file_put_contents($file, $data, $flags) : false;
+	return (defined('DOFILES') && DOFILES) ? file_put_contents($filepath, $filebody, $flags) : false;
 }
 
 function read_json($filepath) {
@@ -28,6 +37,13 @@ function read_json($filepath) {
 }
 
 function write_json($filepath, $data, $json_format = 'loose') {
+/*	$json_flags = match ($json_format) {
+		'loose'     => JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES,
+		'pretty'    => JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT,
+		'ascii'     => JSON_UNESCAPED_SLASHES,
+		'canonical' => JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT,
+		default     => 0;
+	}*/
 	switch ($json_format) {
 		case 'loose':
 			$json_flags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
@@ -94,7 +110,7 @@ function chunk_read($str) {
 function calc_etag($filepath, $method = 's3') {
 	switch ($method) {
 		case 's3':
-			$fullpath = ASSETDIR.$filepath.'.gz';
+			$fullpath = ASSETDIR.$filepath.'.xz';
 			return md5_file($fullpath);
 		case 'nginx':
 			$fullpath = ASSETDIR.$filepath; // change to final path to ensure mtime
@@ -134,10 +150,10 @@ function split_file($filepath, $outpath, $chunksize = 1048576, $delete = false) 
 		'chunks' => []
 	];
 
-	for ($i = 0, $j = 0; $i < $filesize; $i += $chunksize, $j++) {
+	for ($i = 0; $i < $filesize; $i += $chunksize) {
 		$chunk = file_get_contents($filepath, false, null, $i, $chunksize);
 		$md5chunk = md5($chunk);
-		$chunkpath = $outpath.'.'.split_prefix($j);
+		$chunkpath = $outpath.'.'.split_prefix(intdiv($i, $chunksize));
 		write_file($chunkpath, $chunk);
 		$res['chunks'][] = [
 			'file' => $chunkpath,
@@ -186,9 +202,7 @@ function madomagi_db($dbfile, $quality = 'high', $voices = true) {
 		$db->query("INSERT INTO asset_json VALUES('".$assetfile."','\"".calc_etag($assetfile)."\"')");
 		if (in_array($assetfile, $metaassetfiles))
 			continue;
-		$asset = read_json(ASSETDIR.$assetfile);
-		$values = array_map(function($file) { return "('resource/".$file['path']."','".$file['md5']."')"; }, $asset);
-		$db->query("INSERT INTO download_asset VALUES ".implode(",",$values));
+		$db->query("INSERT INTO download_asset VALUES ".implode(",", array_map(function($file) { return "('resource/".$file['path']."','".$file['md5']."')"; }, read_json(ASSETDIR.$assetfile))));
 	}
 	return filesize($dbpath);
 }
@@ -251,16 +265,13 @@ function file2asset($file) {
 }
 
 function generate_asset($filelist, $fileasset) {
-	$files = explode("\n", file_get_contents(LISTDIR.$filelist));
-	$cnt = count($files) - 1;
+	$files = read_list(LISTDIR.$filelist);
+	$cnt = count($files);
 	echo "generate START: ".$filelist." -> ".$fileasset."\n";
 
 	$objs = [];
 	$i = 0;
-	//$objs = array_map('file2asset', $files);
 	foreach ($files as $file) {
-		if ($file == '') // empty last line
-			continue;
 		echo ($i++)."/".$cnt."\r";
 		$objs[] = file2asset($file);
 	}
@@ -412,15 +423,13 @@ function plist_extract($file_png, $file_plist, $file_dir) {
 }
 
 function optimize_json($filelist) {
-	$files = explode("\n", file_get_contents(LISTDIR.$filelist));
-	$cnt = count($files) - 1;
+	$files = read_list(LISTDIR.$filelist);
+	$cnt = count($files);
 	echo "optimize json START: ".$filelist."\n";
 
 	$i = 0;
 	$totes = [-1 => 0, 0 => 0, 1 => 0, 2 => 0];
 	foreach ($files as $file) {
-		if ($file == '') // empty last line
-			continue;
 		echo ($i++)."/".$cnt."\r";
 		$sizediff = rebuild_json(BASEDIR.$file, 'loose');
 		$totes[$sizediff <=> 0]++;
@@ -431,15 +440,13 @@ function optimize_json($filelist) {
 }
 
 function optimize_xml($filelist) {
-	$files = explode("\n", file_get_contents(LISTDIR.$filelist));
-	$cnt = count($files) - 1;
+	$files = read_list(LISTDIR.$filelist);
+	$cnt = count($files);
 	echo "optimize xml START: ".$filelist."\n";
 
 	$i = 0;
 	$totes = [-1 => 0, 0 => 0, 1 => 0, 2 => 0];
 	foreach ($files as $file) {
-		if ($file == '') // empty last line
-			continue;
 		echo ($i++)."/".$cnt."\r";
 		$sizediff = rebuild_xml(BASEDIR.$file, 'loose');
 		$totes[$sizediff <=> 0]++;

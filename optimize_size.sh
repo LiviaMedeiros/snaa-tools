@@ -15,10 +15,10 @@ snaa_print "optimizing image_native-exportjson"
 php ./parts/optimize_json.php image_native-exportjson
 
 snaa_print "optimizing web png!"
-bash ./parts/optimize_png.sh image_web-png ${IMWBDIR}
+bash ./parts/optimize_png.sh image_web-png ${IMWBDIR} 8
 
 snaa_print "optimizing resource png!"
-bash ./parts/optimize_png.sh image_native-png ${BASEDIR}
+bash ./parts/optimize_png.sh image_native-png ${BASEDIR} 8
 
 snaa_print "optimizing plist!" $(tput sgr0)
 php ./parts/optimize_xml.php all-plist
