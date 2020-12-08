@@ -155,7 +155,7 @@ function madomagi_C5XyOsaM() {
 	$C5XyOsaM = [
 		'C5XyOsaM' => '8c88d9d9d8888f8990dcdedfd89089d9dc8a90858c85df908e8a8cdcd98b888f8588df8f'
 	];
-	return write_file(MADODIR.'C5XyOsaM.json', json_encode($C5XyOsaM));
+	return write_json(MADODIR.'C5XyOsaM.json', $C5XyOsaM);
 }
 
 function madomagi_db($dbfile, $quality = 'high', $voices = true) {
@@ -268,13 +268,12 @@ function generate_charlist($filecharlist, $fileasset) {
 	$chars = read_json(BASEDIR.$filecharlist);
 	echo "charlist START: ".$filecharlist." -> ".$fileasset."\n";
 
-	$objs = [
-		file2asset($filecharlist)
-	];
+	$objs = [$filecharlist];
 	foreach ($chars as $char) {
-		$objs[] = file2asset('image_native/card/image/card_'.$char['id'].'_m.png');
-		$objs[] = file2asset('image_native/card/image/card_'.$char['id'].'_l.png');
+		$objs[] = 'image_native/card/image/card_'.$char['id'].'_m.png';
+		$objs[] = 'image_native/card/image/card_'.$char['id'].'_l.png';
 	}
+	$objs = array_map('file2asset', $objs);
 
 	echo "charlist DONE: ".count($objs)." files from ".count($chars)." characters\n";
 	return write_json(ASSETDIR.$fileasset, $objs, 'pretty');
@@ -305,14 +304,13 @@ function check_asset($assetfile, $dir = null) {
 			$allgood = false;
 			continue;
 		}
-		$real_filesize = filesize($filepath);
-		if ($filesize != $real_filesize) {
+		;
+		if (($real_filesize = filesize($filepath)) != $filesize) {
 			echo "LENGHT MISMATCH: ".$file['url']." is ".$filesize.", expected ".$real_filesize."\n";
 			$allgood = false;
 		}
 		$totes['real'] += $real_filesize;
-		$md5_file = md5_file($filepath);
-		if ($md5_file != $asset['md5']) {
+		if (($md5_file = md5_file($filepath)) != $asset['md5']) {
 			echo "MD5SUM MISMATCH: ".$asset['path']." is ".$md5_file.", expected ".$asset['md5']."\n";
 			$allgood = false;
 		}
@@ -352,8 +350,7 @@ function implement_asset($assetfile, $dir = null) {
 			write_file($filepath, $chunk, FILE_APPEND);
 			$c++;
 		}
-		$md5_file = md5_file($filepath);
-		if ($md5_file != $asset['md5']) {
+		if (($md5_file = md5_file($filepath)) != $asset['md5']) {
 			echo "md5 mismatch: ".$asset['path']." is ".$md5_file.", expected ".$asset['md5']."\n";
 			$allgood = false;
 		}
@@ -364,6 +361,10 @@ function implement_asset($assetfile, $dir = null) {
 }
 
 function plist_writeframe($filepath, $frame, $file_png) {
+	if ($frame['x'] === false || $frame['y'] === false || $frame['width'] === false || $frame['height'] === false) {
+		echo " bad frame: ".$filepath."\n";
+		return false;
+	}
 	$img = new Imagick($file_png);
 	$img->cropImage($frame['width'], $frame['height'], $frame['x'], $frame['y']);
 	$img->setImagePage(0, 0, 0, 0);
@@ -373,46 +374,22 @@ function plist_writeframe($filepath, $frame, $file_png) {
 }
 
 function plist_frame($data) {
-	$frame = [];
-	$is_int_frame = true;
-	foreach (['width', 'height', 'originalWidth', 'originalHeight', 'x', 'y'] as $key) {
-		$n = array_search($key, $data['key']);
-		if ($n === false) {
-			$is_int_frame = false;
-			break;
-		}
-		$frame[$key] = $data['integer'][$n];
-	}
-	if ($is_int_frame)
-		return $frame;
-	foreach (['frame'] as $key) { // offset, rotated, sourceSize
-		$n = array_search($key, $data['key']);
-		if ($n === false)
-			return false;
-		if (!preg_match('/{{([0-9]*),([0-9]*)},{([0-9]*),([0-9]*)}}/', $data['string'][$n], $m))
-			return false;
-		return [
-			'x' => $m[1],
-			'y' => $m[2],
-			'width' => $m[3],
-			'height' => $m[4]
-		];
-	}
-	return false;
+	if (($n = array_search('frame', $data['key'])) !== false) // offset, rotated, sourceSize
+		return preg_match('/{{(?<x>[0-9]*),(?<y>[0-9]*)},{(?<width>[0-9]*),(?<height>[0-9]*)}}/', $data['string'][$n], $m) ? $m : false;
+	$keys = ['x', 'y', 'width', 'height']; // originalWidth, originalHeight
+	return array_combine($keys, array_map(function($key) use ($data) { return ($n = array_search($key, $data['key'])) === false ? false : $data['integer'][$n]; }, $keys));
 }
 
 function plist_extract($file_png, $file_plist, $file_dir) {
 	$plist = read_ugly_file_in_ugly_way($file_plist);
 	echo "plist extract START: ".$file_png."\n";
 
-	$fkey = array_search('frames', $plist['dict']['key']);
-	if ($fkey === false)
+	if (($fkey = array_search('frames', $plist['dict']['key'])) === false)
 		return false;
 	$plist = $plist['dict']['dict'][$fkey];
 
 	foreach ($plist['key'] as $n => $framename) {
-		$frame = plist_frame($plist['dict'][$n]);
-		if ($frame === false) {
+		if (($frame = plist_frame($plist['dict'][$n])) === false) {
 			echo " skipping frame: ".$framename."\n";
 			continue;
 		}
