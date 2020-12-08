@@ -87,7 +87,7 @@ function chunk_encode($f, $b, $e, $s = null) {
 
 function chunk_read($str) {
 	return preg_match('/^CHUNK=([^,]*),([0-9]*)-([0-9]*)#$/', $str, $m)
-	     ? file_get_contents(BASEDIR.$m[1], false, null, $m[2], $m[3] - $m[2] + 1)
+	     ? file_get_contents(filename: BASEDIR.$m[1], offset: $m[2], maxlen: $m[3] - $m[2] + 1)
 	     : file_get_contents(BASEDIR.$str);
 }
 
@@ -114,7 +114,7 @@ function is_ugly_chunk($file) { // split --bytes=1048576 --suffix-length=3
 
 function split_prefix($num, $len = 3) {
 	$a = range('a', 'z');
-	$z = 26;
+	$z = count($a);
 	$res = '';
 	for ($i = $len - 1; $i > 0; $i--)
 		$res .= $a[intdiv($num, pow($z, $i))];
@@ -135,7 +135,7 @@ function split_file($filepath, $outpath, $chunksize = 1048576, $delete = false) 
 	];
 
 	for ($i = 0; $i < $filesize; $i += $chunksize) {
-		$chunk = file_get_contents($filepath, false, null, $i, $chunksize);
+		$chunk = file_get_contents(filename: $filepath, offset: $i, maxlen: $chunksize);
 		$md5chunk = md5($chunk);
 		$chunkpath = $outpath.'.'.split_prefix(intdiv($i, $chunksize));
 		write_file($chunkpath, $chunk);
