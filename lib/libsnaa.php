@@ -37,29 +37,13 @@ function read_json($filepath) {
 }
 
 function write_json($filepath, $data, $json_format = 'loose') {
-/*	$json_flags = match ($json_format) {
+	$json_flags = match ($json_format) {
 		'loose'     => JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES,
 		'pretty'    => JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT,
 		'ascii'     => JSON_UNESCAPED_SLASHES,
 		'canonical' => JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT,
-		default     => 0;
-	}*/
-	switch ($json_format) {
-		case 'loose':
-			$json_flags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
-			break;
-		case 'pretty':
-			$json_flags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT;
-			break;
-		case 'ascii':
-			$json_flags = JSON_UNESCAPED_SLASHES;
-			break;
-		case 'canonical':
-			$json_flags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
-			break;
-		default:
-			$json_flags = 0;
-	}
+		default     => 0
+	};
 	$filebody = json_encode($data, $json_flags);
 	write_file($filepath, $filebody);
 	return strlen($filebody);
@@ -390,13 +374,31 @@ function plist_writeframe($filepath, $frame, $file_png) {
 
 function plist_frame($data) {
 	$frame = [];
+	$is_int_frame = true;
 	foreach (['width', 'height', 'originalWidth', 'originalHeight', 'x', 'y'] as $key) {
+		$n = array_search($key, $data['key']);
+		if ($n === false) {
+			$is_int_frame = false;
+			break;
+		}
+		$frame[$key] = $data['integer'][$n];
+	}
+	if ($is_int_frame)
+		return $frame;
+	foreach (['frame'] as $key) { // offset, rotated, sourceSize
 		$n = array_search($key, $data['key']);
 		if ($n === false)
 			return false;
-		$frame[$key] = $data['integer'][$n];
+		if (!preg_match('/{{([0-9]*),([0-9]*)},{([0-9]*),([0-9]*)}}/', $data['string'][$n], $m))
+			return false;
+		return [
+			'x' => $m[1],
+			'y' => $m[2],
+			'width' => $m[3],
+			'height' => $m[4]
+		];
 	}
-	return $frame;
+	return false;
 }
 
 function plist_extract($file_png, $file_plist, $file_dir) {
