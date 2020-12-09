@@ -113,12 +113,9 @@ function is_ugly_chunk($file) { // split --bytes=1048576 --suffix-length=3
 }
 
 function split_prefix($num, $len = 3) {
-	$a = range('a', 'z');
-	$z = count($a);
-	$res = '';
-	for ($i = $len - 1; $i > 0; $i--)
-		$res .= $a[intdiv($num, pow($z, $i))];
-	return $res . $a[$num % $z];
+	$z = count($a = range('a', 'z'));
+	for ($res = ''; $len --> 0; $res .= $a[intdiv($num, pow($z, $len)) % $z]);
+	return $res;
 }
 
 function split_file($filepath, $outpath, $chunksize = 1048576, $delete = false) {
@@ -134,14 +131,16 @@ function split_file($filepath, $outpath, $chunksize = 1048576, $delete = false) 
 		'chunks' => []
 	];
 
-	for ($i = 0; $i < $filesize; $i += $chunksize) {
-		$chunk = file_get_contents(filename: $filepath, offset: $i, maxlen: $chunksize);
+	for ($offset = 0; $offset < $filesize; $offset += $chunksize) {
+		//$chunk = file_get_contents(filename: $filepath, offset: $offset, maxlen: $chunksize);
+		$chunk = file_get_contents($filepath, 0, null, $offset, $chunksize); // unknown maxlen WTF
 		$md5chunk = md5($chunk);
-		$chunkpath = $outpath.'.'.split_prefix(intdiv($i, $chunksize));
+		$chunkpath = $outpath.'.'.split_prefix(intdiv($offset, $chunksize));
+		$realchunksize = strlen($chunk);
 		write_file($chunkpath, $chunk);
 		$res['chunks'][] = [
 			'file' => $chunkpath,
-			'size' => $chunksize,
+			'size' => $realchunksize,
 			'md5' => $md5chunk
 		];
 	}
