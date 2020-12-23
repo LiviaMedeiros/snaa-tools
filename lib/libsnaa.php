@@ -81,12 +81,12 @@ function rebuild_xml($filepath, $xml_format = 'loose') {
 	return $newsize - $filesize;
 }
 
-function chunk_encode($f, $b, $e, $s = null) {
-	return 'CHUNK='.$f.','.$b.'-'.($e - 1).'#';
+function chunk_encode($f, $b, $e, $s = null, $n = null) {
+	return 'CHUNK'.($n === null ? '' : '.'.split_prefix($n)).'='.$f.','.$b.'-'.($e - 1).'#';
 }
 
 function chunk_read($str) {
-	return preg_match('/^CHUNK=([^,]*),([0-9]*)-([0-9]*)#$/', $str, $m)
+	return preg_match('/^CHUNK[^=]*=([^,]*),([0-9]*)-([0-9]*)#$/', $str, $m)
 	     ? file_get_contents(filename: BASEDIR.$m[1], offset: $m[2], maxlen: $m[3] - $m[2] + 1)
 	     : file_get_contents(BASEDIR.$str);
 }
@@ -229,7 +229,7 @@ function file2asset($file) {
 			$chunk_e = $chunk_b + $chunk_s;
 			$file_list[] = [
 				'size' => $chunk_s,
-				'url' => chunk_encode($file, $chunk_b, $chunk_e)
+				'url' => chunk_encode($file, $chunk_b, $chunk_e, $chunk_s, intdiv($chunk_b, (int)SNAASIZE))
 			];
 			$chunk_b = $chunk_e;
 		}
