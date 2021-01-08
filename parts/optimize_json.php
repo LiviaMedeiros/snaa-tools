@@ -1,5 +1,6 @@
 <?php
 require_once('lib/libsnaa.php');
+$snaa = new Snaa();
 
 /* required env:
      BASEDIR
@@ -7,4 +8,4 @@ require_once('lib/libsnaa.php');
 */
 
 
-optimize_json($argv[1].'.snaa');
+$snaa->optimize_json($argv[1].'.snaa');

@@ -1,5 +1,6 @@
 <?php
 require_once('lib/libsnaa.php');
+$snaa = new Snaa();
 
 /* required env:
      MADODIR
@@ -7,5 +8,5 @@ require_once('lib/libsnaa.php');
 */
 
 
-madomagi_C5XyOsaM();
-madomagi_db('madomagi.db');
+$snaa->madomagi_C5XyOsaM();
+$snaa->madomagi_db('madomagi.db');
