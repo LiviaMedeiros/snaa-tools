@@ -1,6 +1,5 @@
 <?php
 require_once('lib/libsnaa.php');
-$snaa = new Snaa();
 
 /* required env:
      ASSETDIR
@@ -8,4 +7,4 @@ $snaa = new Snaa();
 */
 
 
-$snaa->implement_asset(ASSETDIR.$argv[1].'.json');
+Snaa::implement_asset(ASSETDIR.$argv[1].'.json');
