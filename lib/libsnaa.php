@@ -134,8 +134,7 @@ class Snaa {
 		];
 
 		for ($offset = 0; $offset < $filesize; $offset += $chunksize) {
-			//$chunk = file_get_contents(filename: $filepath, offset: $offset, maxlen: $chunksize); // unknown maxlen in 8.0.1 WTF
-			$chunk = file_get_contents($filepath, false, null, $offset, $chunksize); // $use_include_path is bool now
+			$chunk = file_get_contents(filename: $filepath, offset: $offset, length: $chunksize);
 			$md5chunk = md5($chunk);
 			$chunkpath = $outpath.'.'.self::split_prefix(intdiv($offset, $chunksize));
 			$realchunksize = strlen($chunk);
@@ -153,6 +152,7 @@ class Snaa {
 	}
 
 	public static function madomagi_C5XyOsaM() {
+		// for security reasons, I do not expose the actual algo
 		$C5XyOsaM = [
 			'C5XyOsaM' => '8c88d9d9d8888f8990dcdedfd89089d9dc8a90858c85df908e8a8cdcd98b888f8588df8f'
 		];
@@ -187,7 +187,7 @@ class Snaa {
 			$db->query("INSERT INTO asset_json VALUES('".$assetfile."','\"".self::calc_etag($assetfile)."\"')");
 			if (in_array($assetfile, $metaassetfiles))
 				continue;
-			$db->query("INSERT INTO download_asset VALUES ".implode(",", array_map(function($file) { return "('resource/".$file['path']."','".$file['md5']."')"; }, self::read_json(ASSETDIR.$assetfile))));
+			$db->query("INSERT INTO download_asset VALUES ".implode(",", array_map(fn($file) => "('resource/".$file['path']."','".$file['md5']."')", self::read_json(ASSETDIR.$assetfile))));
 		}
 		return filesize($dbpath);
 	}
@@ -281,7 +281,7 @@ class Snaa {
 
 	public static function check_asset($assetfile, $dir = null) {
 		$assets = self::read_json($assetfile);
-		$dir = $dir ?? MADODIR.'resource/';
+		$dir ??= MADODIR.'resource/';
 		echo "check asset START: ".$assetfile." <=> ".$dir."\n";
 		if (!is_dir($dir)) {
 			echo "CHECK FAILED: ".$dir." is not a directory\n";
@@ -322,7 +322,7 @@ class Snaa {
 
 	public static function implement_asset($assetfile, $dir = null) {
 		$assets = self::read_json($assetfile);
-		$dir = $dir ?? MADODIR.'resource/';
+		$dir ??= MADODIR.'resource/';
 		echo "implement START: ".$assetfile." -> ".$dir."\n";
 
 		$allgood = true;
@@ -376,10 +376,12 @@ class Snaa {
 		if (($n = array_search('frame', $data['key'])) !== false) // offset, rotated, sourceSize
 			return preg_match('/{{(?<x>[0-9]*),(?<y>[0-9]*)},{(?<width>[0-9]*),(?<height>[0-9]*)}}/', $data['string'][$n], $m) ? $m : false;
 		$keys = ['x', 'y', 'width', 'height']; // originalWidth, originalHeight
-		return array_combine($keys, array_map(function($key) use ($data) { return ($n = array_search($key, $data['key'])) === false ? false : $data['integer'][$n]; }, $keys));
+		return array_combine($keys, array_map(fn($key) => ($n = array_search($key, $data['key'])) === false ? false : $data['integer'][$n], $keys));
 	}
 
 	public static function plist_extract($file_png, $file_plist, $file_dir) {
+		// plist extractor is obsoleted by newer implementation
+		// the purpose of this code is to remind about xml ugliness
 		$plist = self::read_ugly_file_in_ugly_way($file_plist);
 		echo "plist extract START: ".$file_png."\n";
 
