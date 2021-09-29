@@ -21,23 +21,23 @@ define('SNAAMULT', 2);
 */
 
 class Snaa {
-	private static function touch_iroepoch($filepath) {
+	private static function touch_iroepoch(string $filepath): bool {
 		return is_file($filepath) ? touch($filepath, strtotime(IROEPOCH)) : false;
 	}
 
-	private static function read_list($filepath) {
+	private static function read_list(string $filepath): array|false {
 		return is_file($filepath) ? file($filepath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : false;
 	}
 
-	private static function write_file($filepath, $filebody, $flags = 0) {
+	private static function write_file(string $filepath, string $filebody, int $flags = 0): int|false {
 		return (defined('DOFILES') && DOFILES) ? file_put_contents($filepath, $filebody, $flags) : false;
 	}
 
-	private static function read_json($filepath) {
-		return is_file($filepath) ? json_decode(file_get_contents($filepath), true) : false;
+	private static function read_json(string $filepath): array|false {
+		return is_file($filepath) ? json_decode(file_get_contents($filepath), true) ?? false : false;
 	}
 
-	private static function write_json($filepath, $data, $json_format = 'loose') {
+	private static function write_json(string $filepath, mixed $data, string $json_format = 'loose'): int {
 		$json_flags = match ($json_format) {
 			'loose'     => JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES,
 			'pretty'    => JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT,
@@ -50,22 +50,22 @@ class Snaa {
 		return strlen($filebody);
 	}
 
-	private static function rebuild_json($filepath, $json_format = 'loose') {
+	private static function rebuild_json(string $filepath, string $json_format = 'loose'): int {
 		$filesize = filesize($filepath);
 		$data = self::read_json($filepath);
 		$newsize = self::write_json($filepath, $data, $json_format);
 		return $newsize - $filesize;
 	}
 
-	private static function read_ugly_file($filepath) {
-		return is_file($filepath) ? simplexml_load_string(file_get_contents($filepath)) : false;
+	private static function read_ugly_file(string $filepath): SimpleXMLElement|false {
+		return is_file($filepath) ? simplexml_load_file($filepath) : false;
 	}
 
-	private static function read_ugly_file_in_ugly_way($filepath) {
+	private static function read_ugly_file_in_ugly_way(string $filepath): mixed {
 		return json_decode(json_encode((array)(self::read_ugly_file($filepath))), true);
 	}
 
-	private static function write_ugly_file($filepath, $data, $xml_format = 'loose') {
+	private static function write_ugly_file(string $filepath, mixed $data, string $xml_format = 'loose'): int {
 		$dom = new DOMDocument('1.0');
 		$dom->preserveWhiteSpace = false;
 		$dom->loadXML($data->asXML());
@@ -75,24 +75,24 @@ class Snaa {
 		return strlen($filebody);
 	}
 
-	private static function rebuild_xml($filepath, $xml_format = 'loose') {
+	private static function rebuild_xml(string $filepath, string $xml_format = 'loose'): int {
 		$filesize = filesize($filepath);
 		$data = self::read_ugly_file($filepath);
 		$newsize = self::write_ugly_file($filepath, $data, $xml_format);
 		return $newsize - $filesize;
 	}
 
-	private static function chunk_encode($f, $b, $e, $s = null, $n = null) {
+	private static function chunk_encode(string $f, int $b, int $e, ?int $s = null, ?int $n = null): string {
 		return 'CHUNK'.($n === null ? '' : '.'.self::split_prefix($n)).'='.$f.','.$b.'-'.($e - 1).'#';
 	}
 
-	private static function chunk_read($str) {
+	private static function chunk_read(string $str): string|false {
 		return preg_match('/^CHUNK[^=]*=([^,]*),([0-9]*)-([0-9]*)#$/', $str, $m)
 			 ? file_get_contents(filename: BASEDIR.$m[1], offset: $m[2], maxlen: $m[3] - $m[2] + 1)
 			 : file_get_contents(BASEDIR.$str);
 	}
 
-	private static function calc_etag($filepath, $method = 's3') {
+	private static function calc_etag(string $filepath, string $method = 's3') : string {
 		switch ($method) {
 			case 's3':
 				$fullpath = ASSETDIR.$filepath.'.xz';
@@ -105,22 +105,22 @@ class Snaa {
 		}
 	}
 
-	private static function asset_localpath($file) {
+	private static function asset_localpath(string $file): string {
 		return str_replace(['movie/char/high/', 'movie/char/low/'], ['movie/char/', 'movie/char/'], $file);
 	}
 
-	private static function is_ugly_chunk($file) { // split --bytes=1048576 --suffix-length=3
-		return preg_match('/\.a[a-z][a-z]$/', $file);
+	private static function is_ugly_chunk(string $file): bool { // split --bytes=1048576 --suffix-length=3
+		return boolval(preg_match('/\.a[a-z][a-z]$/', $file));
 	}
 
-	private static function split_prefix($num, $len = 3) {
+	private static function split_prefix(int $num, int $len = 3): string {
 		$z = count($a = range('a', 'z'));
 		for ($res = ''; $len --> 0; $res .= $a[intdiv($num, pow($z, $len)) % $z]);
 		return $res;
 	}
 
 
-	public static function split_file($filepath, $outpath, $chunksize = 1048576, $delete = false) {
+	public static function split_file(string $filepath, string $outpath, int $chunksize = 1048576, bool $delete = false): array|false {
 		$filesize = filesize($filepath);
 		if ($filesize <= $chunksize)
 			return false;
@@ -250,6 +250,8 @@ class Snaa {
 
 	public static function generate_asset($filelist, $fileasset) {
 		$files = self::read_list(LISTDIR.$filelist);
+		if (!$files)
+			return false;
 		$cnt = count($files);
 		echo "generate START: ".$filelist." -> ".$fileasset."\n";
 
@@ -404,6 +406,8 @@ class Snaa {
 
 	public static function optimize_json($filelist) {
 		$files = self::read_list(LISTDIR.$filelist);
+		if (!$files)
+			return false;
 		$cnt = count($files);
 		echo "optimize json START: ".$filelist."\n";
 
@@ -421,6 +425,8 @@ class Snaa {
 
 	public static function optimize_xml($filelist) {
 		$files = self::read_list(LISTDIR.$filelist);
+		if (!$files)
+			return false;
 		$cnt = count($files);
 		echo "optimize xml START: ".$filelist."\n";
 
