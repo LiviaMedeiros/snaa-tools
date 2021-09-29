@@ -1,5 +1,4 @@
-<?php
-declare(strict_types = 1);
+<?php declare(strict_types = 1);
 $wednesday = getenv(); // $_ENV may be disabled
 foreach (['DOFILES', 'BASEDIR', 'ORIGDIR', 'LISTDIR', 'ASSETDIR', 'MADODIR', 'CHARLIST', 'SNAASIZE', 'SNAAMULT'] as $wedkey)
 	if (isset($wednesday[$wedkey]))
@@ -151,7 +150,7 @@ class Snaa {
 		return $res;
 	}
 
-	public static function madomagi_C5XyOsaM() {
+	public static function madomagi_C5XyOsaM(): int {
 		// for security reasons, I do not expose the actual algo
 		$C5XyOsaM = [
 			'C5XyOsaM' => '8c88d9d9d8888f8990dcdedfd89089d9dc8a90858c85df908e8a8cdcd98b888f8588df8f'
@@ -159,7 +158,7 @@ class Snaa {
 		return self::write_json(MADODIR.'C5XyOsaM.json', $C5XyOsaM);
 	}
 
-	public static function madomagi_db($dbfile, $quality = 'high', $voices = true) {
+	public static function madomagi_db(string $dbfile, string $quality = 'high', bool $voices = true): int {
 		$dbpath = MADODIR.$dbfile;
 		$metaassetfiles = [
 			'asset_config.json',
@@ -178,27 +177,31 @@ class Snaa {
 		if (is_file($dbpath))
 			unlink($dbpath);
 		$db = new SQLite3($dbpath);
-		$db->query("CREATE TABLE download_asset(path char(128) primary key,md5 char(128))");
 		$db->query("CREATE TABLE asset_json(file char(128) primary key,etag char(128))");
+		$db->query("CREATE TABLE download_asset(path char(128) primary key,md5 char(128))");
+		$ins_aj = $db->prepare("INSERT INTO asset_json (file, etag) VALUES (:file, :etag)");
 
 		foreach (array_merge($metaassetfiles, $assetfiles) as $assetfile) {
 			echo "making ".$dbfile."/".$assetfile."\n";
 			copy(ASSETDIR.$assetfile, MADODIR.$assetfile);
-			$db->query("INSERT INTO asset_json VALUES('".$assetfile."','\"".self::calc_etag($assetfile)."\"')");
+			$ins_aj->bindValue(':file', $assetfile, SQLITE3_TEXT);
+			$ins_aj->bindValue(':etag', '"'.self::calc_etag($assetfile).'"', SQLITE3_TEXT);
+			$ins_aj->execute();
 			if (in_array($assetfile, $metaassetfiles))
 				continue;
+			// this one is totes reasonable
 			$db->query("INSERT INTO download_asset VALUES ".implode(",", array_map(fn($file) => "('resource/".$file['path']."','".$file['md5']."')", self::read_json(ASSETDIR.$assetfile))));
 		}
 		return filesize($dbpath);
 	}
 
-	public static function copy_asset($origasset, $fileasset) {
+	public static function copy_asset(string $origasset, string $fileasset): int {
 		$asset = self::read_json(ORIGDIR.$origasset);
 		echo "copying: ".$origasset." -> ".$fileasset."\n" ;
 		return self::write_json(ASSETDIR.$fileasset, $asset);
 	}
 
-	public static function reverse_asset($origasset, $filelist) {
+	public static function reverse_asset(string $origasset, string $filelist): int|false {
 		$asset = self::read_json(ORIGDIR.$origasset);
 		$cnt = count($asset);
 		echo "reverse START: ".$origasset." -> ".$filelist."\n";
@@ -217,7 +220,7 @@ class Snaa {
 		return self::write_file(LISTDIR.$filelist, $files);
 	}
 
-	public static function file2asset($file) {
+	public static function file2asset(string $file): array {
 		$filepath = BASEDIR.$file;
 		$filesize = filesize($filepath);
 		$md5_file = md5_file($filepath);
@@ -248,7 +251,7 @@ class Snaa {
 		];
 	}
 
-	public static function generate_asset($filelist, $fileasset) {
+	public static function generate_asset(string $filelist, string $fileasset): int {
 		$files = self::read_list(LISTDIR.$filelist);
 		if (!$files)
 			return false;
@@ -266,7 +269,7 @@ class Snaa {
 		return self::write_json(ASSETDIR.$fileasset, $objs);
 	}
 
-	public static function generate_charlist($filecharlist, $fileasset) {
+	public static function generate_charlist(string $filecharlist, string $fileasset): int {
 		$chars = self::read_json(BASEDIR.$filecharlist);
 		echo "charlist START: ".$filecharlist." -> ".$fileasset."\n";
 
@@ -281,7 +284,7 @@ class Snaa {
 		return self::write_json(ASSETDIR.$fileasset, $objs, 'pretty');
 	}
 
-	public static function check_asset($assetfile, $dir = null) {
+	public static function check_asset(string $assetfile, ?string $dir = null): bool {
 		$assets = self::read_json($assetfile);
 		$dir ??= MADODIR.'resource/';
 		echo "check asset START: ".$assetfile." <=> ".$dir."\n";
@@ -322,7 +325,7 @@ class Snaa {
 		return $allgood;
 	}
 
-	public static function implement_asset($assetfile, $dir = null) {
+	public static function implement_asset(string $assetfile, ?string $dir = null): bool {
 		$assets = self::read_json($assetfile);
 		$dir ??= MADODIR.'resource/';
 		echo "implement START: ".$assetfile." -> ".$dir."\n";
@@ -361,7 +364,7 @@ class Snaa {
 		return $allgood;
 	}
 
-	public static function plist_writeframe($filepath, $frame, $file_png) {
+	public static function plist_writeframe(string $filepath, array $frame, string $file_png): bool {
 		if ($frame['x'] === false || $frame['y'] === false || $frame['width'] === false || $frame['height'] === false) {
 			echo " bad frame: ".$filepath."\n";
 			return false;
@@ -374,14 +377,14 @@ class Snaa {
 		return true;
 	}
 
-	public static function plist_frame($data) {
+	public static function plist_frame(array $data): array {
 		if (($n = array_search('frame', $data['key'])) !== false) // offset, rotated, sourceSize
 			return preg_match('/{{(?<x>[0-9]*),(?<y>[0-9]*)},{(?<width>[0-9]*),(?<height>[0-9]*)}}/', $data['string'][$n], $m) ? $m : false;
 		$keys = ['x', 'y', 'width', 'height']; // originalWidth, originalHeight
 		return array_combine($keys, array_map(fn($key) => ($n = array_search($key, $data['key'])) === false ? false : $data['integer'][$n], $keys));
 	}
 
-	public static function plist_extract($file_png, $file_plist, $file_dir) {
+	public static function plist_extract(string $file_png, string $file_plist, string $file_dir): bool {
 		// plist extractor is obsoleted by newer implementation
 		// the purpose of this code is to remind about xml ugliness
 		$plist = self::read_ugly_file_in_ugly_way($file_plist);
@@ -404,7 +407,7 @@ class Snaa {
 		return true;
 	}
 
-	public static function optimize_json($filelist) {
+	public static function optimize_json(string $filelist): bool {
 		$files = self::read_list(LISTDIR.$filelist);
 		if (!$files)
 			return false;
@@ -423,7 +426,7 @@ class Snaa {
 		return true;
 	}
 
-	public static function optimize_xml($filelist) {
+	public static function optimize_xml(string $filelist): bool {
 		$files = self::read_list(LISTDIR.$filelist);
 		if (!$files)
 			return false;
