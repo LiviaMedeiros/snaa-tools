@@ -1,14 +1,14 @@
 import { readdir } from 'node:fs/promises';
-import { resolve, extname } from 'node:path';
+import { resolve } from 'node:path';
 import { Worker } from 'node:worker_threads';
 import { cpus } from 'node:os';
 
 const { length } = cpus();
 
-const collectFiles = async (dir, ext) =>
+const collectFiles = async (dir, include, exclude) =>
   readdir(dir, { withFileTypes: true, recursive: true }).then(files => files
     .map(({ parentPath, name }) => resolve(parentPath, name))
-    .filter(filePath => !ext || ext.includes(extname(filePath)))
+    .filter(filePath => (!include || include.test(filePath)) && !exclude?.test(filePath))
   );
 
 const worker = new URL('./worker.mjs', import.meta.url);
@@ -34,7 +34,7 @@ if (!pathsFile) {
 }
 
 const files = await import(new URL(pathsFile, import.meta.url), { with: { type: 'json' } })
-  .then(({ default: $ }) => Promise.all($.map(({ dir, ext }) => collectFiles(resolve(startingDirectory, dir), ext))))
+  .then(({ default: $ }) => Promise.all($.map(({ dir, include, exclude }) => collectFiles(resolve(startingDirectory, dir), include && new RegExp(include), exclude && new RegExp(exclude)))))
   .then($ => $.flat());
 
 console.warn(`Processing ${files.length} files in ${length} jobs...`);
